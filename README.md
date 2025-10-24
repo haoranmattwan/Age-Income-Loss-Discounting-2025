@@ -10,17 +10,17 @@ The data for this study are available in the Supplementary Material at the publi
 
 ## Project Overview
 
-This study examined the effects of age and income on the discounting of delayed monetary losses, testing a "buffering hypothesis" which posits that age-related increases in emotional stability may buffer against the stress of financial scarcity. Unlike previous research, this study used a wide range of loss amounts (\$150, \$2,500, and \$30,000) and a large, diverse sample of adults aged 20 to 80.
+This study examined the effects of age and income on the discounting of delayed monetary losses, testing a "buffering hypothesis" which posits that age-related psychological factors may buffer against the stress of financial scarcity. The study used a wide range of loss amounts (\$150, \$2,500, and \$30,000) and a large, diverse sample of adults aged 20 to 80.
 
 The analysis workflow begins with a simulation-based power analysis to determine the required sample size. The primary analysis then uses a series of Bayesian multilevel beta regressions to model the Area under the Curve (AuC) as the key measure of discounting. These models test for linear and nonlinear effects of age, as well as interactions between age, income, and the amount of the loss.
 
 ## Repository Structure
 
-The project materials are organized into the following folders:
+This project demonstrates the ability to conduct a complete, end-to-end research project and validate the results across statistical ecosystems.
 
-* **/Analysis**: Contains the primary analysis scripts that replicate the findings in the paper.
-    * `analysis.qmd`: A Quarto document with the complete **R** code for the entire workflow. It demonstrates data processing, power analysis, model fitting (`brms`, `glmmTMB`), and visualization (`ggplot2`).
-    * `analysis.ipynb`: A Jupyter Notebook providing a direct **Python** translation of the R analysis, using `pandas` for data manipulation, `pymc` for Bayesian modeling, and `statsmodels` for auxiliary tests.
+* **/Analysis**: Contains the primary analysis scripts.
+    * `analysis_R.qmd`: **(Primary Analysis)** A Quarto document with the complete **R** code for the entire workflow. It demonstrates data processing (`tidyverse`), power analysis (`glmmTMB`), model fitting (`brms`), and visualization (`ggplot2`).
+    * `analysis_Py.ipynb`: **(Python Replication)** A Jupyter Notebook providing a direct **Python** translation of the R analysis, using `pandas` for data manipulation, `pymc` for Bayesian modeling, and `pingouin`/`scipy` for descriptive statistics.
 
 * **/Presentation**: Contains a slide deck or poster used to present the findings of this research.
 
@@ -30,34 +30,39 @@ The project materials are organized into the following folders:
 
 ## Methodology Snapshot
 
-This project demonstrates a robust and sophisticated approach to statistical modeling in the behavioral sciences, including:
+This project demonstrates a robust and sophisticated approach to statistical modeling, including:
 
-* **Simulation-Based Power Analysis**: A custom R function was written to simulate data and determine the statistical power for detecting key effects in a multilevel beta regression framework.
-* **Bayesian Multilevel Modeling**: The core of the analysis uses Bayesian beta regression to appropriately model the proportional AuC data while accounting for repeated measures within participants. The analysis tests for both linear and quadratic effects of age.
-* **Interaction Analysis**: The final model includes a comprehensive examination of two-way interactions between age, income, loss amount, and other demographic and psychological variables to test the study's primary hypotheses.
-* **Reliability and Descriptive Analysis**: The analysis includes checks on the internal consistency of the discounting measure (Cronbach's alpha) and fits nonlinear hyperboloid functions to group-level data to ensure data quality.
+* **Cross-Ecosystem Validation**: Replicating a complex Bayesian multilevel model from R (`brms`) in Python (`pymc`) to ensure model specification and results are robust.
+* **Bayesian Multilevel Modeling**: Using Bayesian beta regression to appropriately model the proportional AuC data while accounting for repeated measures within participants, including tests for non-linear (quadratic) effects.
+* **Simulation-Based Power Analysis**: A custom R function was written to simulate data (`glmmTMB`) and determine the statistical power for detecting key effects in a multilevel beta regression framework.
+* **Interaction Analysis**: A comprehensive examination of two-way interactions between age, income, loss amount, and other demographic and psychological variables to test the study's primary hypotheses.
+* **Reliability and Descriptive Analysis**: Includes checks on the internal consistency of the discounting measure (Cronbach's alpha) and fits nonlinear hyperboloid functions to group-level data to ensure data quality.
 
 ---
 
 ## Software and Execution
 
-To run the analyses, you will need the appropriate software environment and the raw data file (`Data_DelayLoss.csv`) from the publication's supplementary material.
+To run the analyses, you will need the appropriate software environment and the raw data file (e.g., `Lifespan.csv`) from the publication's supplementary material.
 
-### R Environment (`/Analysis/analysis.qmd`)
+### R Environment (`/Analysis/analysis_R.qmd`)
 
-* **Required Packages**: `brms`, `tidyverse` (includes `readr`, `dplyr`, `ggplot2`), `glmmTMB`, `tidybayes`, `modelr`, `psych`.
+* **Required Packages**: `brms`, `cmdstanr`, `tidyverse` (includes `readr`, `dplyr`, `ggplot2`), `glmmTMB`, `tidybayes`, `psych`, `Hmisc`, `multcomp`, `minpack.lm`, `doSNOW`, `here`, `modelr`, `ggpubr`, `bayestestR`.
 * **Installation**:
     ```R
-    install.packages(c("brms", "tidyverse", "glmmTMB", "tidybayes", "modelr", "psych", "here", "doSNOW"))
-    # brms also requires a working Stan installation via cmdstanr
-    # install.packages("cmdstanr", repos = c("[https://mc-stan.org/r-packages/](https://mc-stan.org/r-packages/)", getOption("repos")))
-    # cmdstanr::install_cmdstan()
+    # Install main packages
+    install.packages(c("brms", "tidyverse", "glmmTMB", "tidybayes", "psych", 
+                       "Hmisc", "multcomp", "minpack.lm", "doSNOW", "here", 
+                       "modelr", "ggpubr", "bayestestR"))
+    
+    # brms requires a working Stan installation via cmdstanr
+    install.packages("cmdstanr", repos = c("[https://mc-stan.org/r-packages/](https://mc-stan.org/r-packages/)", getOption("repos")))
+    cmdstanr::install_cmdstan()
     ```
 
-### Python Environment (`/Analysis/analysis.ipynb`)
+### Python Environment (`/Analysis/analysis_Py.ipynb`)
 
-* **Required Packages**: `pandas`, `numpy`, `pymc`, `arviz`, `statsmodels`, `patsy`, `pingouin`, `seaborn`.
+* **Required Packages**: `pandas`, `numpy`, `scipy`, `statsmodels`, `pymc`, `arviz`, `matplotlib`, `seaborn`, `pingouin`, `patsy`.
 * **Installation**:
     ```bash
-    pip install pandas numpy pymc arviz statsmodels patsy pingouin seaborn openpyxl
+    pip install pandas numpy scipy statsmodels pymc arviz matplotlib seaborn pingouin patsy
     ```
