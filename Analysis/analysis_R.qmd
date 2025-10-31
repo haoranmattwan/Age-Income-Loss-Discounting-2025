@@ -211,7 +211,7 @@ SimPower_MLM <- function(n_ID, beta0 = 0, beta1, beta2, phi = 12.2, sigma = .944
 
 ## Data Loading and Processing
 
-The raw dataset is loaded and undergoes several processing steps to prepare for analysis. This includes filtering to the final sample (N = 594), renaming variables for clarity, calculating individual-level AuC values, and creating scaled predictor variables for the regression models.
+The raw dataset is loaded and undergoes several processing steps to prepare for analysis. This includes filtering to the final sample (N = 594), calculating individual-level AuC values, and creating scaled predictor variables for the regression models.
 
 ```{r setup_data}
 # --- 2. DATA LOADING AND PROCESSING ---
