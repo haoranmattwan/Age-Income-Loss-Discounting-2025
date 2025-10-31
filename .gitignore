@@ -12,10 +12,6 @@ env/
 renv/library/
 renv/staging/
 
-# Stan
-*.o
-*.d
-
 # OS / Editor specific
 .DS_Store
 .vscode/
