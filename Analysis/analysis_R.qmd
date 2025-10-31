@@ -9,6 +9,9 @@ format:
     self-contained: true
     theme: cosmo
     mainfont: "Garamond"
+execute:
+  warning: false
+  message: false
 engine: knitr
 ---
 
@@ -33,9 +36,6 @@ The workflow is organized as follows:
 The data for this study are available in the Supplementary Material at the publisher's website.
 
 ```{r setup_package}
-#| message: false
-#| warning: false
-
 # --- 1. SETUP: PACKAGES, OPTIONS, AND FUNCTIONS ---
 
 # Set global chunk options to suppress messages and warnings for a clean output
@@ -57,6 +57,7 @@ library(modelr)       # For creating model-based data grids
 library(ggpubr)       # For arranging ggplot objects
 library(tidyverse)    # For data manipulation and visualization (ggplot2, dplyr, etc.)
 library(bayestestR)   # For calculating probability of direction (pd)
+library(readxl)       # For loading data
 
 # --- Custom Functions ---
 
@@ -213,60 +214,35 @@ SimPower_MLM <- function(n_ID, beta0 = 0, beta1, beta2, phi = 12.2, sigma = .944
 The raw dataset is loaded and undergoes several processing steps to prepare for analysis. This includes filtering to the final sample (N = 594), renaming variables for clarity, calculating individual-level AuC values, and creating scaled predictor variables for the regression models.
 
 ```{r setup_data}
-#| message: false
-#| warning: false
-
 # --- 2. DATA LOADING AND PROCESSING ---
 
 # Load the raw data from the .csv file
 # The original dataset contains data from multiple studies.
-setwd(here::here())
-Samp <- read_csv("R code/dat/Lifespan.csv") |> select(-1)
-
-# --- Initial Filtering and Cleaning ---
-# This chain filters the data to the final sample used in the paper.
-Disc_Raw <- filter(Samp, type == "delay" & task == "loss") |>
-  # Filter by age, attention check pass (check == 6), and valid gender entry
-  filter(!is.na(age), age >= 20, age <= 80, check == 6, !is.na(sex)) |>
-  # Remove participants with inconsistent age reporting
-  filter(age-10*age_grp >= 0 & age-10*age_grp <= 10) |>
-  # Create age group factor for plotting and descriptive stats
-  mutate(age_grp_factor = factor(case_when(
-                                  age >= 20 & age < 35 ~ "20-34",
-                                  age >= 35 & age <= 50 ~ "35-50",
-                                  age > 50 & age < 65 ~ "51-64",
-                                  age >= 65 & age <= 80 ~ "65-80"), 
-                                levels = c("20-34","35-50","51-64","65-80"))) |>
-  # Select and rename variables for clarity
-  select(-c(task,month,year,white,hislat,duration,check, age_grp)) |>
-  rename(Exp = type, ID = id, Amount = amt, Delay = iv, SV = value, Age = age, 
-         Income = income, Gender = sex, Depression = depress, Anxiety = anxious, 
-         Distress = hads, Education = edu, Health = health, Age_Group = age_grp_factor, 
-         Ethnicity = eth, Race = race)
+Disc_Raw <- read_excel("Supplementary Data.xlsx", sheet = 2) |>
+  mutate(age_grp_factor = factor(case_when(Age >= 20 & Age < 35 ~ "20-34",
+                                           Age >= 35 & Age <= 50 ~ "35-50",
+                                           Age > 50 & Age < 65 ~ "51-64",
+                                           Age >= 65 & Age <= 80 ~ "65-80"),                                   
+                                 levels = c("20-34","35-50","51-64","65-80")),
+         # Log-transform amount due to skewed distribution
+         Amount_log = log(if_else(Amount==1, 150, if_else(Amount==3, 30000, 2500)))) |>
+  mutate(across(.cols = c(Income, Education, Distress, Anxiety, Depression), ~as.numeric(.)))
 
 # --- Create Group-Level Data Frame for Plotting (Figure 1) ---
 Disc_Grp <- Disc_Raw |>
-  mutate(Amount = factor(if_else(Amount==1, "$150", if_else(Amount==3, "$30,000", "$2,500")), 
+  mutate(Amount = factor(if_else(Amount==150, "$150", if_else(Amount==30000, "$30,000", "$2,500")), 
                          levels = c("$150", "$2,500", "$30,000"))) |>
-  group_by(Age_Group, Amount, Delay) |> 
-  summarise(Mean_SV = mean(SV), .groups = 'drop')
-
-# --- Create Individual-Level Data Frame ---
-Disc_ID <- Disc_Raw |>
-  # Convert education from categorical to years
-  mutate(Education = case_when(Education == 1 ~ 5, Education == 2 ~ 12, Education == 3 ~ 14,  
-                               Education == 4 ~ 16, Education == 5 ~ 18),
-         # Log-transform amount due to skewed distribution
-         Amount_log = log(if_else(Amount==1, 150, if_else(Amount==3, 30000, 2500))))
+  group_by(age_grp_factor, Amount, Delay) |> 
+  summarise(Mean_RSV = mean(RSV), .groups = 'drop')
 
 # --- Calculate Area under the Curve (AuC) for Each Participant ---
 # AuC is calculated for each of the three loss amounts.
-AuC_ID <- Disc_ID |>
+AuC_ID <- Disc_Raw |>
   group_by(ID, Amount) |>
   # Normalize delay to a 0-1 scale for AuC calculation
-  summarise(AuC = auc(Delay/max(Delay), SV), .groups = 'drop') |>
+  summarise(AuC = auc(Delay/max(Delay), RSV), .groups = 'drop') |>
   # Join back the unique demographic info for each participant
-  left_join(distinct(Disc_ID, ID, Age, Age_Group, Income, Gender, Education, 
+  left_join(distinct(Disc_Raw, ID, Age, age_grp_factor, Income, Gender, Education, 
                      Distress, Anxiety, Depression, Health), by = "ID") |>
   # Adjust AuC values of 1 to be slightly less than 1, as required by beta regression
   mutate(AuC = if_else(AuC == 1, 1 - .Machine$double.eps, AuC))
@@ -299,8 +275,6 @@ DL_dat4 <- filter(AuC_ID, Age >= 35, !is.na(Income), !is.na(Gender),
          Depression_std = (Depression - mean(Depression)) / (2*sd(Depression)),
          Distress_std = (Distress - mean(Distress)) / (2*sd(Distress)),
          Health_std = (Health - mean(Health)) / (2*sd(Health)))
-
-cat("Data processing complete. Final sample size: ", n_distinct(AuC_ID$ID), " participants.\n")
 ```
 
 ## Power Analysis
@@ -308,8 +282,6 @@ cat("Data processing complete. Final sample size: ", n_distinct(AuC_ID$ID), " pa
 A simulation-based power analysis was conducted to ensure the sample size (N ≈ 100 per decade) was sufficient to detect hypothesized small-to-medium effects of Age and Income (parameterized as `log(1.5)`) with at least 80% power. The results confirm that the study was well-powered.
 
 ```{r power_analysis}
-#| message: false
-#| warning: false
 #| eval: false
 
 # --- 3. POWER ANALYSIS ---
@@ -337,9 +309,6 @@ data.frame(
 This section replicates the descriptive results from the paper. It includes the visualization of group-level discounting functions (Figure 1), goodness-of-fit statistics for the hyperboloid model, reliability of the AuC measure, and the correlation matrices for key variables.
 
 ```{r descriptive_analyses}
-#| message: false
-#| warning: false
-
 # --- 4. DESCRIPTIVE & CORRELATIONAL ANALYSES ---
 
 # --- Figure 1 Replication: Group-Level Discounting Functions ---
@@ -347,7 +316,7 @@ This section replicates the descriptive results from the paper. It includes the 
 # broken down by age group and the amount of the delayed loss.
 Disc_Grp |>
   arrange(desc(Amount)) |>
-  ggplot(aes(Delay, Mean_SV, shape = Amount, fill = Amount, color = Amount, linetype = Amount)) +
+  ggplot(aes(Delay, Mean_RSV, shape = Amount, fill = Amount, color = Amount, linetype = Amount)) +
   # Fit a hyperboloid discounting function to the group means
   geom_smooth(method = "nlsLM", formula = y ~ 1 / (1 + exp(k)*x)^b,
               method.args = list(start = list(k = -4, b = .5)),
@@ -355,23 +324,23 @@ Disc_Grp |>
   geom_point(size = 3, stroke = .5, color = "black") +
   scale_y_continuous(limits = c(-.005, 1.005), breaks=seq(0,1,by=0.2), expand=c(0,0)) +
   scale_x_continuous(limits = c(-10, 130), expand=c(0,0)) +
-  facet_wrap(~Age_Group, nrow = 1) +
+  facet_wrap(~age_grp_factor, nrow = 1) +
   scale_linetype_manual(values = c("dotted", "dashed", "solid")) +  
   scale_fill_manual(name = "Amount", values = c("$30,000"="#1f78b4","$2,500"= "#ff7f00","$150"="#33a02c")) +
   scale_color_manual(name = "Amount", values = c("$30,000"="#1f78b4","$2,500"= "#ff7f00","$150"="#33a02c")) +
   scale_shape_manual(name="Amount", values = c("$150" = 22, "$2,500" = 24, "$30,000" = 21)) + 
   labs(x = "Delay (months)", y = "Relative Subjective Value") +
-  theme_bw() + mattheme
+  mattheme
 
 # --- Goodness-of-Fit for Group-Level Hyperboloid Functions ---
 # The hyperboloid model provided a good fit to the data across all groups.
 cat("--- R-squared for Group-Level Hyperboloid Fits ---\n")
 Disc_Grp |>
-  group_by(Age_Group, Amount) |>
-  reframe(R2 = rsquare(nlsLM(Mean_SV ~ 1 / (1 + k * Delay)^s, 
+  group_by(age_grp_factor, Amount) |>
+  reframe(R2 = rsquare(nlsLM(Mean_RSV ~ 1 / (1 + k * Delay)^s, 
                              data = pick(everything()), start = list(k = .1, s = 1)), 
                        data = pick(everything()))) |>
-  pivot_wider(names_from = Age_Group, values_from = R2) |> 
+  pivot_wider(names_from = age_grp_factor, values_from = R2) |> 
   print(digits = 4)
 
 # --- Test for the "Amount Effect" ---
@@ -379,12 +348,12 @@ Disc_Grp |>
 # A significant effect was found for younger, but not older, groups.
 cat("\n--- P-values for Amount Effect within each Age Group ---\n")
 AuC_ID |>
-  group_by(Age_Group) |>
+  group_by(age_grp_factor) |>
   reframe(p_val = summary(glht(
     glmmTMB(AuC ~ as.factor(Amount) + (1|ID), data = pick(everything()), family = beta_family()), 
     linfct = matrix(c(-1, 1, 0), nrow = 1)))$test$pvalues[1]
   ) |>
-  pivot_wider(names_from = Age_Group, values_from = p_val) |>
+  pivot_wider(names_from = age_grp_factor, values_from = p_val) |>
   print(digits = 4)
   
 # --- Reliability of AuC Measure (Cronbach's Alpha) ---
@@ -420,33 +389,29 @@ print(round(corr_matrix_35plus$r, 3))
 This section replicates the main hypothesis tests from the paper, corresponding to Table 3. A series of four Bayesian multilevel beta regression models were fitted to test the effects of age, income, anxiety, and other covariates on AuC for participants aged 35 and older.
 
 ```{r hypothesis_test}
-#| message: false
-#| warning: false
-
 # --- 5. HYPOTHESIS TESTING: BAYESIAN MULTILEVEL MODELS ---
 # Models are cached to .rds files to avoid re-fitting, which can be time-consuming.
-setwd(here::here())
 
 # --- Model 1: AuC ~ Age + Age^2 ---
 # This model tests for a linear and quadratic effect of age on discounting.
 # The significant quadratic term indicates the effect of age diminishes in older participants.
 cat("--- Model 1: AuC ~ Age + Age^2 ---\n")
 DL_mod1b <- betaMLM_brm(Formula = bf(AuC ~ Age_std + I(Age_std^2) + (1 | ID)), 
-                        Data = DL_dat1, File = "R code/07-28-25/brm/DL_mod1b")
+                        Data = DL_dat1, File = "rds/DL_mod1b")
 print(brm_summary(DL_mod1b))
 
 # --- Model 2: AuC ~ Age + Age^2 + Income ---
 # Adds income as a predictor. Higher income was associated with shallower discounting (larger AuC)].
 cat("\n--- Model 2: AuC ~ Age + Age^2 + Income ---\n")
 DL_mod2 <- betaMLM_brm(Formula = bf(AuC ~ Age_std + I(Age_std^2) + Income_std + (1|ID)), 
-                       Data = DL_dat2, File = "R code/07-28-25/brm/DL_mod2")
+                       Data = DL_dat2, File = "rds/DL_mod2")
 print(brm_summary(DL_mod2))
 
 # --- Model 3: AuC ~ Age + Age^2 + Income + Anxiety ---
 # Adds anxiety as a predictor. Anxiety was significant in this model.
 cat("\n--- Model 3: AuC ~ Age + Age^2 + Income + Anxiety ---\n")
 DL_mod3 <- betaMLM_brm(Formula = bf(AuC ~ Age_std + I(Age_std^2) + Income_std + Anxiety_std + (1|ID)), 
-                       Data = DL_dat3, File = "R code/07-28-25/brm/DL_mod3")
+                       Data = DL_dat3, File = "rds/DL_mod3")
 print(brm_summary(DL_mod3))
 
 # --- Model 4: Full Model with Covariates and Interactions ---
@@ -454,7 +419,7 @@ print(brm_summary(DL_mod3))
 cat("\n--- Model 4: Full Model with Covariates and Interactions ---\n")
 DL_mod4 <- betaMLM_brm(
   Formula = bf(AuC ~ (Age_std+Income_std + Anxiety_std + Amount_std + Education_std + Gender_c + Health_std)^2 + I(Age_std^2) + (1 + Amount_std|ID)), 
-  Data = DL_dat4, File = "R code/07-28-25/brm/DL_mod4"
+  Data = DL_dat4, File = "rds/DL_mod4"
 )
 print(brm_summary(DL_mod4))
 ```
@@ -464,23 +429,19 @@ print(brm_summary(DL_mod4))
 The paper notes that while anxiety was a significant predictor of discounting, depression and overall psychological distress were not (when controlling for age and income). This section presents the models that confirm these findings.
 
 ```{r supplementary_analyses}
-#| message: false
-#| warning: false
-
 # --- 6. SUPPLEMENTARY ANALYSES: DEPRESSION & DISTRESS ---
-setwd(here::here())
 
 # --- Model S1: Test effect of Depression ---
 cat("--- Model S1: AuC ~ Age + Age^2 + Income + Depression ---\n")
 DL_modS1 <- betaMLM_brm(Formula = bf(AuC ~ Age_std + I(Age_std^2) + Income_std + Depression_std + (1|ID)), 
-                        Data = DL_dat3, File = "R code/07-28-25/brm/DL_modS1")
+                        Data = DL_dat3, File = "rds/DL_modS1")
 print(brm_summary(DL_modS1))
 
 # --- Model S2: Full model with Depression ---
 cat("\n--- Model S2: Full Model with Depression and Interactions ---\n")
 DL_modS2 <- betaMLM_brm(
   Formula = bf(AuC ~ (Age_std + Income_std + Depression_std + Amount_std + Education_std + Gender_c + Health_std)^2 + I(Age_std^2) + (1 + Amount_std|ID)), 
-  Data = DL_dat4, File = "R code/07-28-25/brm/DL_modS2"
+  Data = DL_dat4, File = "rds/DL_modS2"
 )
 print(brm_summary(DL_modS2))
 
@@ -488,14 +449,14 @@ print(brm_summary(DL_modS2))
 # --- Model S3: Test effect of Distress ---
 cat("\n--- Model S3: AuC ~ Age + Age^2 + Income + Distress ---\n")
 DL_modS3 <- betaMLM_brm(Formula = bf(AuC ~ Age_std + I(Age_std^2) + Income_std + Distress_std + (1|ID)), 
-                        Data = DL_dat3, File = "R code/07-28-25/brm/DL_modS3")
+                        Data = DL_dat3, File = "rds/DL_modS3")
 print(brm_summary(DL_modS3))
 
 # --- Model S4: Full model with Distress ---
 cat("\n--- Model S4: Full Model with Distress and Interactions ---\n")
 DL_modS4 <- betaMLM_brm(
   Formula = bf(AuC ~ (Age_std + Income_std + Distress_std + Amount_std + Education_std + Gender_c + Health_std)^2 + I(Age_std^2) + (1+Amount_std|ID)),
-  Data = DL_dat4, File = "R code/07-28-25/brm/DL_modS4"
+  Data = DL_dat4, File = "rds/DL_modS4"
 )
 print(brm_summary(DL_modS4))
 ```
@@ -505,9 +466,6 @@ print(brm_summary(DL_modS4))
 This section replicates Figure 4 from the paper, visualizing the key findings from the full regression model (Model 4). The plots show the predicted AuC as a function of age, moderated by income level (left panel) and the magnitude of the loss (right panel). A significant Age x Amount interaction was found, where age differences were more pronounced for larger loss amounts.
 
 ```{r model_visualization}
-#| message: false
-#| warning: false
-
 # --- 7. VISUALIZING KEY INTERACTIONS (FIGURE 4 REPLICATION) ---
 
 # --- Age x Income Interaction Plot ---
@@ -549,14 +507,14 @@ p_income <- add_epred_draws(DL_mod4, newdata = pred_grid_income, re_formula = NA
 
 # 1. Create prediction grid.
 pred_grid_amount <- expand(DL_dat4, Age = seq(35, 80, 1),
-                           Amount = c(1, 2, 3)) |>
+                           Amount = c(150, 2500, 30000)) |>
   # 2. Scale Age and Amount, hold other predictors at their mean.
   mutate(
     Age_std = (Age - mean(DL_dat4$Age)) / (2*sd(DL_dat4$Age)),
     Amount_std = (Amount - mean(DL_dat4$Amount)) / (2*sd(DL_dat4$Amount)),
     Income_std = 0, Education_std = 0, Gender_c = 0, 
     Anxiety_std = 0, Health_std = 0,
-    Amount_Factor = factor(Amount, levels = c(1,2,3), labels = c("$150", "$2,500", "$30,000"))
+    Amount_Factor = factor(Amount, levels = c(150, 2500, 30000), labels = c("$150", "$2,500", "$30,000"))
   )
 
 # 3. Generate posterior predictions.

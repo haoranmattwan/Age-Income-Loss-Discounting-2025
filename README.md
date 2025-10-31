@@ -28,15 +28,14 @@ This project demonstrates the ability to conduct a complete, end-to-end research
 
 ---
 
-## Methodology Snapshot
+## Methodological Approach
 
-This project demonstrates a robust and sophisticated approach to statistical modeling, including:
+The analysis follows a comprehensive workflow, from initial power analysis to final model validation.
 
-* **Cross-Ecosystem Validation**: Replicating a complex Bayesian multilevel model from R (`brms`) in Python (`pymc`) to ensure model specification and results are robust.
-* **Bayesian Multilevel Modeling**: Using Bayesian beta regression to appropriately model the proportional AuC data while accounting for repeated measures within participants, including tests for non-linear (quadratic) effects.
-* **Simulation-Based Power Analysis**: A custom R function was written to simulate data (`glmmTMB`) and determine the statistical power for detecting key effects in a multilevel beta regression framework.
-* **Interaction Analysis**: A comprehensive examination of two-way interactions between age, income, loss amount, and other demographic and psychological variables to test the study's primary hypotheses.
-* **Reliability and Descriptive Analysis**: Includes checks on the internal consistency of the discounting measure (Cronbach's alpha) and fits nonlinear hyperboloid functions to group-level data to ensure data quality.
+* **Simulation-Based Power Analysis**: Prior to data collection, a custom R function was written to simulate data (`glmmTMB`) and conduct a power analysis to determine the required sample size for detecting key interaction effects within a multilevel beta regression framework.
+* **Data Validation and Reliability**: Initial analyses included fitting nonlinear hyperboloid functions to group-level data to ensure data quality and calculating Cronbach's alpha to check the internal consistency of the discounting measure.
+* **Bayesian Hierarchical Modeling**: The primary analysis used Bayesian multilevel beta regression to appropriately model the proportional Area under the Curve (AuC) data while accounting for repeated measures within participants. The models tested for both linear and nonlinear (quadratic) effects of age and examined two-way interactions between age, income, loss amount, and other variables to test the study's hypotheses.
+* **Cross-Platform Validation**: To ensure the robustness of the findings, the entire Bayesian multilevel model was replicated from R (`brms`) into Python (`pymc`), confirming that the model specification and results were consistent across statistical ecosystems.
 
 ---
 
