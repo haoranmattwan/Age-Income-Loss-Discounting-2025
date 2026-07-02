@@ -1,17 +1,102 @@
+# Participant-level and derived research data
+/Analysis/Supplementary Data.xlsx
+/R code/
+**/data/
+**/dat/
+**/Data/
+**/*raw*data*/
+**/Data_*.csv
+**/*participant*.csv
+*.sav
+*.zsav
+*.dta
+*.por
+
+# Private research archive: drafts, correspondence, review, and administration
+/Manuscript/
+/Correspondence/
+/correspondence/
+/Literature/
+/literature/
+/Receipts/
+/receipts/
+**/*draft*
+**/*rebuttal*
+**/*response*letter*
+**/*reviewer*
+**/*receipt*
+
+# Qualtrics exports and survey source files
+**/*Qualtrics*
+*.qsf
+*.qsf.json
+
+# Office and local archive files (tracked files are not removed by this rule)
+*.doc
+*.docx
+*.ppt
+*.pptx
+*.xls
+*.xlsx
+*.pdf
+*.png
+*.Rproj
+
+# Generated analyses, model objects, figures, and reports
+/Analysis/cache/
+/Analysis/rds/
+/Analysis/outputs/
+/Analysis/reports/
+/Analysis/tables/
+/Analysis/figures/
+/Analysis/*_files/
+/Analysis/*.html
+/Figure/
+/output/
+/outputs/
+/_freeze/
+/.quarto/
+*.rds
+*.RData
+*.Rout
+*.nc
+*.netcdf
+*.pkl
+*.pickle
+
 # Python
 __pycache__/
-*.pyc
+*.py[cod]
 .ipynb_checkpoints/
 .venv/
+venv/
 env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
-# R
+# R and RStudio/Posit
 .Rhistory
-.RData
+.Rapp.history
+.RDataTmp
 .Rproj.user/
 renv/library/
 renv/staging/
 
-# OS / Editor specific
+# Temporary files and caches
+/tmp/
+tmp/
+.cache/
+cache/
+*.tmp
+*.temp
+*.log
+~$*
+
+# Editors and operating systems
 .DS_Store
+._*
 .vscode/
+.idea/
+.positai
+/tests/

@@ -1,0 +1,41 @@
+cff-version: 1.2.0
+message: "Please cite the published article when using this repository."
+title: "Age, Income, and the Discounting of Delayed Monetary Losses: Analysis Code"
+type: software
+authors:
+  - family-names: Wan
+    given-names: Haoran
+    orcid: "https://orcid.org/0000-0002-3434-3146"
+  - family-names: Myerson
+    given-names: Joel
+    orcid: "https://orcid.org/0000-0001-8108-9892"
+  - family-names: Green
+    given-names: Leonard
+    orcid: "https://orcid.org/0000-0003-1555-5757"
+  - family-names: Strube
+    given-names: Michael J.
+    orcid: "https://orcid.org/0000-0002-4731-8142"
+  - family-names: Hale
+    given-names: Sandra
+    orcid: "https://orcid.org/0000-0003-4291-4022"
+repository-code: "https://github.com/haoranmattwan/Age-Income-Loss-Discounting-2025"
+license: MIT
+preferred-citation:
+  type: article
+  title: "Age, income, and the discounting of delayed monetary losses"
+  authors:
+    - family-names: Wan
+      given-names: Haoran
+    - family-names: Myerson
+      given-names: Joel
+    - family-names: Green
+      given-names: Leonard
+    - family-names: Strube
+      given-names: Michael J.
+    - family-names: Hale
+      given-names: Sandra
+  journal: "The Journals of Gerontology, Series B: Psychological Sciences and Social Sciences"
+  year: 2025
+  volume: 80
+  issue: 11
+  doi: "10.1093/geronb/gbaf162"
